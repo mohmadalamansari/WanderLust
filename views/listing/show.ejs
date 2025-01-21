@@ -1,0 +1,40 @@
+<% layout("layouts/boilerplate") %>
+
+<div class="container mt-5">
+  <!-- Card for Listing Details -->
+  <div class="card shadow-lg">
+    <img
+      src="<%= listing.image || '/images/default-image.jpg' %>"
+      class="card-img-top img-fluid"
+      alt="Listing Image"
+      style="max-height: 300px; object-fit: cover"
+    />
+    <div class="card-body">
+      <h3 class="card-title text-primary mb-3"><%= listing.title %></h3>
+      <p class="card-text text-muted mb-4"><%= listing.description %></p>
+
+      <ul class="list-group list-group-flush mb-3">
+        <li class="list-group-item">
+          <strong>Price:</strong> &#8377; <%= listing.price ?
+          listing.price.toLocaleString("en-IN") : "Contact for Price" %>
+        </li>
+        <li class="list-group-item">
+          <strong>Location:</strong> <%= listing.location %>
+        </li>
+        <li class="list-group-item">
+          <strong>Country:</strong> <%= listing.country %>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Buttons for Actions -->
+  <div class="d-flex justify-content-between align-items-center mt-4">
+    <a href="/listings/<%= listing.id %>/edit" class="btn btn-warning">
+      <i class="bi bi-pencil-square"></i> Edit
+    </a>
+    <form method="post" action="/listings/<%= listing.id %>?_method=DELETE">
+      <button class="btn btn-danger"><i class="bi bi-trash"></i> Delete</button>
+    </form>
+  </div>
+</div>
