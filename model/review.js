@@ -4,7 +4,7 @@ const { Schema } = mongoose;
 const reviewSchema = new Schema({
     comment: {
         type: String,  // Fixed 'String' instead of Joi's 'string'
-        // required: true
+        required: true
     },
     rating: {
         type: Number,

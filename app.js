@@ -40,14 +40,7 @@ app.get("/", (req, res) => {
   // res.send("all good")
 });
 
-// Index Route - Lists all listings
-app.get(
-  "/listings",
-  wrapAsync(async (req, res) => {
-    const allListings = await Listing.find({}); // Fetch all listings from the database
-    res.render("listing/index", { allListings }); // Render the "index" template with the listings data
-  })
-);
+
 const validateListing = (req, res, next) => {
   // Ensure the correct object is being validated
   let { error } = listingSchema.validate(req.body.listing);
@@ -70,6 +63,15 @@ const validateReview = (req, res, next) => {
     next();
   }
 };
+
+// Index Route - Lists all listings
+app.get(
+  "/listings",
+  wrapAsync(async (req, res) => {
+    const allListings = await Listing.find({}); // Fetch all listings from the database
+    res.render("listing/index", { allListings }); // Render the "index" template with the listings data
+  })
+);
 
 // New Route - Displays a form for creating a new listing
 app.get(
@@ -95,7 +97,7 @@ app.get(
 // Create Route - Adds a new listing to the database
 app.post(
   "/listing",
-  validateListing,
+  // validateListing,
   wrapAsync(async (req, res) => {
     const newListing = new Listing(req.body.listing); // Create a new listing
     await newListing.save(); // Save the listing to the database
@@ -119,7 +121,7 @@ app.get(
 // Update Route - Updates an existing listing in the database
 app.put(
   "/listings/:id",
-  validateListing,
+  // validateListing,
   wrapAsync(async (req, res, next) => {
     // if (!req.body.listing) {
     //   return next(new ExpressError(400, "Send valid data for listing")); // Error if no data is provided
