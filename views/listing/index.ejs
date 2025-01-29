@@ -11,7 +11,7 @@
     <div class="row row-cols-lg-5 row-cols-md-2 row-cols-sm-1">
       <% for (let listing of allListings) { %>
         <a class="listing-link" href="/listing/<%= listing._id %>">
-          <div class="cards">
+          <div class="cards listing-card">
             <img
               src="<%= listing.image || '/images/default-image.jpg' %>"
               class="card-img-top"

@@ -59,7 +59,7 @@ color: #1b1a1a !important;
 }
 
 /* cards */
-.cards{
+.listing-card{
     border: none !important;
     margin-bottom: 2rem;
 }

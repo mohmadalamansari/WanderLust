@@ -2,6 +2,9 @@
 
 <div class="container mt-5">
   <!-- Card for Listing Details -->
+  <div class="col-4 offset-1 mb-4">
+    <h3><%= listing.title %></h3>
+  </div>
   <div class="card shadow-lg">
     <img
       src="<%= listing.image || '/images/default-image.jpg' %>"
@@ -10,7 +13,7 @@
       style="max-height: 300px; object-fit: cover"
     />
     <div class="card-body">
-      <h3 class="card-title text-primary mb-3"><%= listing.title %></h3>
+      <!-- <h3 class="card-title text-primary mb-3"><%= listing.title %></h3> -->
       <p class="card-text text-muted mb-4"><%= listing.description %></p>
 
       <ul class="list-group list-group-flush mb-3">
@@ -36,5 +39,61 @@
     <form method="post" action="/listings/<%= listing.id %>?_method=DELETE">
       <button class="btn btn-danger"><i class="bi bi-trash"></i> Delete</button>
     </form>
+  </div>
+  <hr />
+  <div class="col-8 offset-3">
+    <h4>Leave a Review</h4>
+    <form
+      action="/listings/<%= listing.id%>/reviews"
+      method="post"
+      novalidate
+      class="needs-validation"
+    >
+      <div class="mb-3 mt-3">
+        <label for="rating" class="form-label">Rating</label>
+        <input
+          type="range"
+          min="1"
+          max="5"
+          id="Rating"
+          name="review[rating]"
+          class="form-range"
+        />
+      </div>
+      <div class="mb-3 mt-3">
+        <label for="comment" class="form-label">comment</label>
+        <textarea
+          name="review[comment]"
+          id="comment"
+          cols="30"
+          rows="5"
+          class="form-control"
+          required
+        ></textarea>
+        <div class="invalid-feedback">
+          please add Submit some comments for review
+        </div>
+      </div>
+      <button class="btn btn-outline-dark mt-3">Submit</button>
+    </form>
+    <p><b>All Reviews</b></p>
+    <div class="row">
+      <% for(review of listing.review) {%>
+      <div class="card col-5 ms-3 mb-3">
+        <div class="card-body">
+          <h5 class="card-title">Name :Rehan Alam</h5>
+          <p class="card-text">comments :<%= review.comment%>.</p>
+          <p class="card-text">Rating: <%= review.rating%>Stars</p>
+
+          <form
+            method="POST"
+            action="/listings/<%= listing._id %>/reviews/<%= review._id %>?_method=DELETE"
+          >
+            <button type="submit" class="btn btn-sm btn-dark">Delete</button>
+          </form>
+        </div>
+      </div>
+      <% } %>
+    </div>
   </div>
 </div>

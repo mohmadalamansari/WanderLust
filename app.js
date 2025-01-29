@@ -6,14 +6,15 @@ const methodOverride = require("method-override"); // Middleware to support HTTP
 const ejsMate = require("ejs-mate"); // EJS layout engine to manage templates
 const wrapAsync = require("./utils/wrapasync"); // Utility function to catch async errors
 const ExpressError = require("./utils/ExpressError"); // Custom error handler class
-const { listingSchema } = require("./schema"); // Validation schema for listings
+const { listingSchema, reviewSchema } = require("./schema"); // Validation schema for listings
+const Review = require("./model/review");
 
 const path = require("path"); // Node.js module for handling file paths
 const app = express();
 
 // Set view engine and views directory
-app.set("view engine", "ejs"); 
-app.set("views", path.join(__dirname, "views")); 
+app.set("view engine", "ejs");
+app.set("views", path.join(__dirname, "views"));
 
 // Middleware setup
 app.use(express.urlencoded({ extended: true })); // Parse URL-encoded data from forms
@@ -40,68 +41,144 @@ app.get("/", (req, res) => {
 });
 
 // Index Route - Lists all listings
-app.get("/listings", wrapAsync(async (req, res) => {
-  const allListings = await Listing.find({}); // Fetch all listings from the database
-  res.render("listing/index", { allListings }); // Render the "index" template with the listings data
-}));
+app.get(
+  "/listings",
+  wrapAsync(async (req, res) => {
+    const allListings = await Listing.find({}); // Fetch all listings from the database
+    res.render("listing/index", { allListings }); // Render the "index" template with the listings data
+  })
+);
+const validateListing = (req, res, next) => {
+  // Ensure the correct object is being validated
+  let { error } = listingSchema.validate(req.body.listing);
+  //console.log(ërror)
+  if (error) {
+    let errmsg = error.details.map((el) => el.message).join(",");
+    throw new ExpressError(400, errmsg);
+  } else {
+    next();
+  }
+};
+
+const validateReview = (req, res, next) => {
+  let { error } = reviewSchema.validate(req.body);
+  if (error) {
+    // Map through the validation errors and join their messages
+    let errmsg = error.details.map((el) => el.message).join(", ");
+    throw new ExpressError(400, errmsg);
+  } else {
+    next();
+  }
+};
 
 // New Route - Displays a form for creating a new listing
-app.get("/listing/new", wrapAsync((req, res) => {
-  res.render("listing/new"); // Render the "new" template for adding a listing
-}));
+app.get(
+  "/listing/new",
+  wrapAsync((req, res) => {
+    res.render("listing/new"); // Render the "new" template for adding a listing
+  })
+);
 
 // Show Route - Displays details of a specific listing
-app.get("/listing/:id", wrapAsync(async (req, res, next) => {
-  const { id } = req.params; // Extract the ID from request parameters
-  const listing = await Listing.findById(id); // Find the listing by ID
-  if (!listing) {
-    return next(new ExpressError(404, "Listing not found")); // Handle missing listing
-  }
-  res.render("listing/show", { listing }); // Render the "show" template with the listing data
-}));
+app.get(
+  "/listing/:id",
+  wrapAsync(async (req, res, next) => {
+    const { id } = req.params; // Extract the ID from request parameters
+    const listing = await Listing.findById(id).populate("review"); // Find the listing by ID
+    if (!listing) {
+      return next(new ExpressError(404, "Listing not found")); // Handle missing listing
+    }
+    res.render("listing/show", { listing }); // Render the "show" template with the listing data
+  })
+);
 
 // Create Route - Adds a new listing to the database
-app.post("/listing", wrapAsync(async (req, res) => {
-  let {result}  
-  const newListing = new Listing(req.body.listing); // Create a new listing
-  await newListing.save(); // Save the listing to the database
-  res.redirect("/listings"); // Redirect to the index route after saving
-}));
+app.post(
+  "/listing",
+  validateListing,
+  wrapAsync(async (req, res) => {
+    const newListing = new Listing(req.body.listing); // Create a new listing
+    await newListing.save(); // Save the listing to the database
+    res.redirect("/listings"); // Redirect to the index route after saving
+  })
+);
 
 // Edit Route - Displays a form for editing an existing listing
-app.get("/listings/:id/edit", wrapAsync(async (req, res, next) => {
-  const { id } = req.params; // Extract the ID from request parameters
-  const listing = await Listing.findById(id); // Find the listing by ID
-  if (!listing) {
-    return next(new ExpressError(404, "Listing not found")); // Handle missing listing
-  }
-  res.render("listing/edit", { listing }); // Render the "edit" template with the listing data
-}));
+app.get(
+  "/listings/:id/edit",
+  wrapAsync(async (req, res, next) => {
+    const { id } = req.params; // Extract the ID from request parameters
+    const listing = await Listing.findById(id); // Find the listing by ID
+    if (!listing) {
+      return next(new ExpressError(404, "Listing not found")); // Handle missing listing
+    }
+    res.render("listing/edit", { listing }); // Render the "edit" template with the listing data
+  })
+);
 
 // Update Route - Updates an existing listing in the database
-app.put("/listings/:id", wrapAsync(async (req, res, next) => {
-  if (!req.body.listing) {
-    return next(new ExpressError(400, "Send valid data for listing")); // Error if no data is provided
-  }
-  const { id } = req.params; // Extract the ID from request parameters
-  const updatedListing = req.body.listing; // Extract updated data from request body
-  const listing = await Listing.findByIdAndUpdate(id, updatedListing, { new: true }); // Update listing in the database
-  if (!listing) {
-    return next(new ExpressError(404, "Listing not found for update")); // Handle missing listing
-  }
-  res.redirect(`/listing/${id}`); // Redirect to the show route for the updated listing
-}));
+app.put(
+  "/listings/:id",
+  validateListing,
+  wrapAsync(async (req, res, next) => {
+    // if (!req.body.listing) {
+    //   return next(new ExpressError(400, "Send valid data for listing")); // Error if no data is provided
+    // }
+    const { id } = req.params; // Extract the ID from request parameters
+    const updatedListing = req.body.listing; // Extract updated data from request body
+    const listing = await Listing.findByIdAndUpdate(id, updatedListing, {
+      new: true,
+    }); // Update listing in the database
+    if (!listing) {
+      return next(new ExpressError(404, "Listing not found for update")); // Handle missing listing
+    }
+    res.redirect(`/listing/${id}`); // Redirect to the show route for the updated listing
+  })
+);
 
 // Delete Route - Deletes a listing from the database
-app.delete("/listings/:id", wrapAsync(async (req, res, next) => {
-  let { id } = req.params;
-  const deletedListing = await Listing.findByIdAndDelete(id); // Delete listing by ID
-  if (!deletedListing) {
-    return next(new ExpressError(404, "Listing not found for deletion")); // Handle missing listing
-  }
-  res.redirect("/listings"); // Redirect to the listings page after deletion
-}));
+app.delete(
+  "/listings/:id",
+  wrapAsync(async (req, res, next) => {
+    let { id } = req.params;
+    const deletedListing = await Listing.findByIdAndDelete(id); // Delete listing by ID
+    if (!deletedListing) {
+      return next(new ExpressError(404, "Listing not found for deletion")); // Handle missing listing
+    }
+    res.redirect("/listings"); // Redirect to the listings page after deletion
+  })
+);
 
+// reviews
+//post review Route
+app.post(
+  "/listings/:id/reviews",
+  validateReview,
+  wrapAsync(async (req, res) => {
+    let listing = await Listing.findById(req.params.id);
+    let newReview = new Review(req.body.review);
+
+    listing.review.push(newReview);
+
+    await newReview.save();
+    await listing.save();
+    //  console.log("new review saved ")
+    //  res.send("new review saved ")
+    res.redirect(`/listing/${listing._id}`);
+  })
+);
+
+// delete Reviews route
+app.delete(
+  "/listings/:id/reviews/:reviewId",
+  wrapAsync(async (req, res) => {
+    let { id, reviewId } = req.params;
+    await Listing.findByIdAndUpdate(id, { $pull: { reviews: reviewId } });
+    await Review.findByIdAndDelete(reviewId);
+
+    res.redirect(`/listing/${id}`); // Correct redirect
+  })
+);
 
 // app.get("/testlisting",(req,res)=>{
 //     let sampleListing = new Listing({
@@ -119,7 +196,6 @@ app.delete("/listings/:id", wrapAsync(async (req, res, next) => {
 //     console.log("sample was save ");
 //     res.send("sucessfully testing ")
 //  })
-
 
 // Catch-all route for undefined routes
 app.all("*", (req, res, next) => {
